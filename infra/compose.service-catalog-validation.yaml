@@ -1,0 +1,68 @@
+# Entorno exclusivamente sintético, sin credenciales reales ni egress de generación.
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg17-bookworm@sha256:3e8b3adfd27b5707128f60956f62a793c3c9326ea8cfaf0eab7adccb5d700b21
+    environment:
+      POSTGRES_DB: sentinel
+      POSTGRES_USER: bootstrap
+      POSTGRES_PASSWORD: synthetic-bootstrap-local
+    volumes: [catalog-db:/var/lib/postgresql/data, ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro]
+    networks: [isolated]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U bootstrap -d sentinel]
+      interval: 2s
+      retries: 30
+  embeddings:
+    image: epiphyllum-embeddings:0.1.0
+    networks: [isolated]
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  backend:
+    image: epiphyllum-service-catalog-backend:validation
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgres://sentinel:synthetic-local-db-only@postgres/sentinel
+      ADMIN_SECRET: synthetic-catalog-browser-secret
+      MASTER_KEY: '0101010101010101010101010101010101010101010101010101010101010101'
+      APP_ORIGIN: http://localhost:18080
+      EMBEDDINGS_URL: http://embeddings:8001
+      MCP_ALLOW_SYNTHETIC_FIXTURE: '1'
+    volumes: [catalog-logs:/data/logs:ro]
+    networks: [isolated]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      postgres: {condition: service_healthy}
+      embeddings: {condition: service_healthy}
+  frontend:
+    image: epiphyllum-service-catalog-frontend:validation
+    build:
+      context: ../frontend
+    ports: [127.0.0.1:18080:8080]
+    networks: [isolated,web]
+    read_only: true
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on: [backend]
+  mcp-fixture:
+    image: python:3.12.12-slim-bookworm@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134606dd40d8dd8dbcade98e669c
+    command: [python, /fixture.py]
+    volumes: [../tests/mcp_fixture.py:/fixture.py:ro]
+    networks: [isolated]
+    user: '65534:65534'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+networks:
+  isolated: {internal: true}
+  web:
+volumes:
+  catalog-db:
+  catalog-logs:

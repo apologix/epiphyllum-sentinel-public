@@ -1,0 +1,18 @@
+Epiphyllum Sentinel
+Copyright 2026 apologix
+
+Este producto incluye software de terceros. Sus licencias, avisos y textos
+completos se conservan en los archivos de dependencias y en las imágenes base
+fijadas por digest:
+
+- Rust y crates: backend/Cargo.lock y backend/Cargo.toml.
+- Frontend: frontend/package.json y frontend/package-lock.json.
+- Embeddings: embeddings/requirements.lock y embeddings/model-sha256.json.
+- Imágenes de contenedor: compose.yaml y los Dockerfile de cada servicio.
+
+Los modelos de embeddings descargados por embeddings/download.py conservan la
+revisión y el SHA256 declarados en embeddings/model-sha256.json. Consulte la
+licencia de cada modelo y dependencia antes de redistribuir esta copia.
+
+Los nombres Epiphyllum Sentinel y sus logotipos no se conceden por la licencia
+Apache-2.0 del código; su uso requiere autorización del titular.

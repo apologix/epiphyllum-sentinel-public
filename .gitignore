@@ -1,0 +1,30 @@
+# Secretos y archivos locales
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# Producto y herramientas futuras
+node_modules/
+target/
+dist/
+.venv/
+__pycache__/
+# Datos de ejecución
+*.log
+artifacts/private/
+
+# Evidencias reproducibles incluidas en el respaldo
+!artifacts/validation/**/*.log
+# Caché incremental de TypeScript
+*.tsbuildinfo
+# Corpus sintético versionado con licencia y hashes; necesario para include_bytes!.
+!datasets/native/*.log
+
+# Montajes locales elegidos por el operador
+compose.external.local.yaml
+
+.lab-local/
+
+# Respaldo local que incluye node_modules; no se versiona
+/Archive.zip

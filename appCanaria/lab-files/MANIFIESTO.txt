@@ -1,0 +1,2 @@
+publicos: publico-contrato-marco.txt
+internos: interno-marcador.txt (solo laboratorio, nunca por la ruta segura)

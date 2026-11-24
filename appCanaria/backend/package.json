@@ -1,0 +1,20 @@
+{
+  "name": "canario-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Outsourcing Canario — API REST (Fastify + MySQL). Logs NDJSON compatibles con node-json@1 de Epiphyllum Sentinel.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "fastify": "^5.2.0",
+    "mysql2": "^3.12.0"
+  }
+}

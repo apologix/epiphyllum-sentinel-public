@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "max_distance": 0.22,
+  "status": "measured_2026-11-12_20_technical_positive_4_negative",
+  "metric": "cosine_distance",
+  "evaluation": "evaluation.json"
+}

@@ -1,0 +1,24 @@
+# Laboratorio privado, listo para usar («plug and play»).
+# Combinar con compose.yaml y compose.organized.yaml; véase lab/README.md.
+#
+# El participante no configura nada en el host: el backend conecta directo
+# al endpoint que se escribe en Servicios → Agregar servicio → MCP. La CA
+# pública del laboratorio viaja en lab/lab-ca.pem; también puede pegarse una
+# CA personalizada en el formulario y queda guardada por fuente. Sin relay.
+services:
+  backend:
+    environment:
+      GENERATION_PAUSED: ${GENERATION_PAUSED:-0}
+      MCP_LAB_CA_FILE: /run/lab/ca.pem
+      # Red aislada admitida por el backend (IPv4 privada, HTTPS 443, /mcp).
+      MCP_LAB_NETWORK: ${MCP_LAB_NETWORK:-192.168.122.0/24}
+      # Conexión directa por defecto: no se define MCP_LAB_PROXY. Queda como
+      # respaldo opcional si una red concreta bloqueara la salida directa.
+    volumes:
+      - type: bind
+        source: ${MCP_LAB_CA_PATH:-./lab/lab-ca.pem}
+        target: /run/lab/ca.pem
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: !override [internal, provider-egress]

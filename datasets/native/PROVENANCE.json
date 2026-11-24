@@ -1,0 +1,59 @@
+{
+  "repository": "https://github.com/logtriage-cyber/security-log-samples",
+  "revision": "7418e5d56ab82f6d31b349eb512a666c9610a3c6",
+  "synthetic": true,
+  "license": "CC-BY-4.0",
+  "attribution": "LogTriage \u2014 https://logtriage.app",
+  "files": [
+    {
+      "file": "authlog_brute_force.log",
+      "source_path": "samples/auth-log/malicious/authlog_brute_force.log",
+      "sha256": "0198736e3abe5f30fb44f1c67b24274bb68620f9f9432936b09fd1c18c8dcab1"
+    },
+    {
+      "file": "nginx_error_attack.log",
+      "source_path": "samples/nginx-error/malicious/nginx_error_attack.log",
+      "sha256": "330fa0f92a452bdec8d74440a2b1ad5780c3f071586416920cb50fede99a1f19"
+    },
+    {
+      "file": "apache_error_attack.log",
+      "source_path": "samples/apache-error/malicious/apache_error_attack.log",
+      "sha256": "fbf4759c9d6099f45d30364ac2439f05aa54a689ad013338218e64590517d85a"
+    },
+    {
+      "file": "nginx_error_normal.log",
+      "source_path": "samples/nginx-error/benign/nginx_error_normal.log",
+      "sha256": "e7914b4ea0ab206154ef445307097112e5ced2147f82e652b67fed9f909d511b"
+    },
+    {
+      "file": "apache_error_normal.log",
+      "source_path": "samples/apache-error/benign/apache_error_normal.log",
+      "sha256": "14d1b3f2fb8b6c7d1808145452349d4d4ff671e7f4e537b24777e5b0c27bfa2d"
+    },
+    {
+      "file": "authlog_normal.log",
+      "source_path": "samples/auth-log/benign/authlog_normal.log",
+      "sha256": "d86ee6c369f0de91479ac0e11114fbaf53f87f1f7aee5985ab9f3d16045b20e4"
+    },
+    {
+      "file": "haproxy_normal.log",
+      "source_path": "samples/haproxy/benign/haproxy_normal.log",
+      "sha256": "356266f34db25a058c9f0e7132dcfc7d8bed0ec66c65119e138bc9ce9dce82f9"
+    },
+    {
+      "file": "haproxy_attack.log",
+      "source_path": "samples/haproxy/malicious/haproxy_attack.log",
+      "sha256": "76174ed006021ceb35d8cddbd91843e76cf3808d44af44857055fe5ae4d84ff9"
+    },
+    {
+      "file": "syslog_normal.log",
+      "source_path": "samples/syslog/benign/syslog_normal.log",
+      "sha256": "3085072ca9707fd2f37cee40f7efe65f86581abd06d3aa670e16d925d6bd060e"
+    },
+    {
+      "file": "syslog_port_scan.log",
+      "source_path": "samples/syslog/malicious/syslog_port_scan.log",
+      "sha256": "c68cd5e7e3e19385939d1ab7bd526a1f5e4941f709d126d3504fbe7c41bdaab9"
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+name: epiphyllum-sentinel
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg17-bookworm@sha256:3e8b3adfd27b5707128f60956f62a793c3c9326ea8cfaf0eab7adccb5d700b21
+    environment:
+      POSTGRES_DB: sentinel
+      POSTGRES_USER: bootstrap
+      POSTGRES_PASSWORD: synthetic-bootstrap-local
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks: [internal]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U bootstrap -d sentinel]
+      interval: 3s
+      retries: 30
+    security_opt: [no-new-privileges:true]
+    # Entrypoint initializes ownership before PostgreSQL drops to its postgres UID.
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER, DAC_OVERRIDE, SETGID, SETUID]
+  embeddings:
+    image: epiphyllum-embeddings:0.1.0
+    build: ./embeddings
+    networks: [internal]
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1800m
+  secrets-init:
+    image: epiphyllum-backend:0.1.0
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: [sentinel, --init-secrets]
+    environment:
+      ADMIN_SECRET: ${ADMIN_SECRET:-}
+      MASTER_KEY: ${MASTER_KEY:-}
+    volumes: [private-secrets:/secrets:rw]
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  backend:
+    image: epiphyllum-backend:0.1.0
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgres://sentinel:synthetic-local-db-only@postgres/sentinel
+      ADMIN_SECRET: ${ADMIN_SECRET:-}
+      MASTER_KEY: ${MASTER_KEY:-}
+      APP_ORIGIN: http://localhost:8080
+      DEMO_SESSION_ID: ${DEMO_SESSION_ID:-00000000-0000-4000-8000-000000000042}
+      EMBEDDINGS_URL: http://embeddings:8001
+      PROVIDER_ALLOWED_ORIGINS: ${PROVIDER_ALLOWED_ORIGINS:-}
+    volumes: [demo-logs:/data/logs:ro, private-secrets:/secrets:ro]
+    networks: [internal, provider-egress]
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+      postgres: {condition: service_healthy}
+      embeddings: {condition: service_healthy}
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    mem_limit: 768m
+  frontend:
+    image: epiphyllum-frontend:0.1.0
+    build: ./frontend
+    ports: [127.0.0.1:8080:8080]
+    networks: [internal,web]
+    depends_on: [backend]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  generator:
+    image: epiphyllum-backend:0.1.0
+    profiles: [demo]
+    entrypoint: [generator]
+    command: [--scenario, conference-v1, --seed, '42', --speed, '0', --output, /data/logs]
+    volumes: [demo-logs:/data/logs:rw]
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+volumes:
+  pg-data:
+  demo-logs:
+  private-secrets:
+networks:
+  internal: {internal: true}
+  web:
+  provider-egress:

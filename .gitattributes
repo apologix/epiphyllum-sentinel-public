@@ -1,0 +1,2 @@
+# Los .bat se guardan con CRLF para que cmd.exe los ejecute correctamente.
+*.bat text eol=crlf

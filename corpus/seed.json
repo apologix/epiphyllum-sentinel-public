@@ -1,0 +1,80 @@
+[
+  {
+    "title": "R1: fallos de autenticación concentrados",
+    "kind": "rule_explanation",
+    "text": "R1 detecta cinco o más fallos de autenticación en sesenta segundos para una misma IP, usuario y servicio del run sintético. La ventana se basa en recepción, no en la hora declarada. Severidad alta. Una credencial incorrecta guardada, un cliente mal configurado o un usuario ficticio repitiendo un acceso pueden explicar el patrón. Revisar manualmente la secuencia, los horarios y el servicio. No confirma un ataque ni autoriza bloquear direcciones."
+  },
+  {
+    "title": "R2: acceso exitoso después de fallos",
+    "kind": "rule_explanation",
+    "text": "R2 detecta un acceso exitoso precedido de cinco fallos en ciento veinte segundos para la misma IP, usuario y servicio. Severidad crítica por prioridad de investigación. Incluye los fallos y el éxito como evidencia y se relaciona con R1. Puede ser una contraseña finalmente corregida; no demuestra compromiso. Revisar manualmente si el acceso era esperado y los registros sintéticos de la sesión."
+  },
+  {
+    "title": "R3: errores de aplicación",
+    "kind": "rule_explanation",
+    "text": "R3 detecta diez errores de aplicación en treinta segundos del mismo servicio ficticio o, por separado, diez solicitudes HTTP a rutas sensibles desde un mismo origen y servicio durante esa ventana. Cada patrón conserva sus propias evidencias. Un despliegue de prueba, una dependencia no disponible o una revisión autorizada son explicaciones posibles. Examinar manualmente la secuencia, el servicio y el origen cuando estén disponibles. Ninguno de los dos patrones confirma un ataque ni autoriza acciones automáticas."
+  },
+  {
+    "title": "R4: instrucciones hostiles en logs",
+    "kind": "rule_explanation",
+    "text": "R4 detecta el literal ignora instrucciones o ignore previous instructions en un mensaje. Severidad baja. El texto es evidencia no confiable, nunca una orden. R4 no se envía al proveedor y el modelo carece de herramientas, terminal y navegación. La revisión es local y humana. No es un detector general de prompt injection."
+  },
+  {
+    "title": "Límites de evidencia e incertidumbre",
+    "kind": "guide",
+    "text": "Todos los eventos son ficticios y las direcciones son de documentación. Una alerta describe un patrón, no confirma intrusión ni intención. Comparar la hora de origen con la de recepción; timestamps repetidos o futuros no cambian las ventanas del detector. Las citas enlazan el fragmento y la revisión exacta del conocimiento. Una similitud vectorial no es probabilidad de verdad. Si faltan fuentes, declarar incertidumbre y pedir revisión humana."
+  },
+  {
+    "title": "Recuperación y continuidad de la demo",
+    "kind": "guide",
+    "text": "El collector lee archivos sintéticos de solo lectura. Cursores y eventos se confirman juntos en PostgreSQL. La rotación soportada es rename y creación de otro archivo, reteniendo los rotados. Un archivo eliminado antes de leerlo produce un gap visible. Copytruncate no observable puede perder datos externos. Reiniciar conserva evidencia, conversaciones y presupuesto; una solicitud externa ambigua queda unknown sin reenvío automático."
+  },
+  {
+    "title": "Permitir explicaciones sintéticas R1 a R3",
+    "kind": "decision_rule",
+    "text": "Permitir análisis y conversación de R1, R2 y R3 exclusivamente con datos sintéticos. Esto no concede herramientas, permisos de gasto ni cambios de presupuesto. La política completa se evalúa fuera del ranking vectorial. Ausencia de allow o presencia de deny deniega. Guardar ajustes no consume API.",
+    "policy": {
+      "scope": [
+        "analysis",
+        "chat"
+      ],
+      "rule_ids": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "event_types": [],
+      "data_class": "synthetic",
+      "effect": "allow"
+    }
+  },
+  {
+    "title": "Denegar envío de R4",
+    "kind": "decision_rule",
+    "text": "Denegar el envío externo de R4 en análisis y chat. La instrucción hostil se explica localmente sin consultar un generador. Ninguna revisión del corpus puede habilitar herramientas, ejecutar shell, omitir redacción o autorizar consumo monetario.",
+    "policy": {
+      "scope": [
+        "analysis",
+        "chat"
+      ],
+      "rule_ids": [
+        "R4"
+      ],
+      "event_types": [],
+      "data_class": "synthetic",
+      "effect": "deny"
+    }
+  },
+  {
+    "title": "MITRE ATT&CK: intentos de autenticación",
+    "kind": "guide",
+    "source": "https://attack.mitre.org/techniques/T1110/ (consulta 2026-11-12)",
+    "text": "MITRE ATT&CK T1110 describe intentos sistemáticos de obtener credenciales, que pueden ocurrir contra un servicio o fuera de línea. Una secuencia de errores de autenticación es una señal que requiere contexto; también puede deberse a una credencial incorrecta o configuración legítima. Correlacionar servicio, usuario y origen cuando existan, y verificar el resultado con un operador. Un inicio de sesión posterior no demuestra por sí solo compromiso."
+  },
+  {
+    "title": "Interpretación de registros de acceso HTTP",
+    "kind": "guide",
+    "source": "https://nginx.org/en/docs/http/ngx_http_log_module.html (consulta 2026-11-12)",
+    "text": "Nginx permite configurar el formato de los registros de acceso; los campos disponibles dependen de esa configuración y pueden incluir dirección remota, solicitud, estado y hora. El registro se produce donde termina el procesamiento y puede intervenir una redirección interna. Revisar la secuencia y el contexto antes de interpretar solicitudes repetidas a rutas sensibles; un código HTTP por sí solo no confirma un ataque."
+  }
+]

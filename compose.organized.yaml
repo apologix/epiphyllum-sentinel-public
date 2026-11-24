@@ -1,0 +1,13 @@
+# Operación local: conserva perfiles/credenciales. La generación NO se pausa
+# por defecto; para pausar todo despacho exportá GENERATION_PAUSED=1.
+# docker --context default compose -f compose.yaml -f compose.organized.yaml up -d
+services:
+  backend:
+    image: epiphyllum-backend:service-folders
+    environment:
+      GENERATION_PAUSED: ${GENERATION_PAUSED:-0}
+    networks: !override [internal]
+  frontend:
+    image: epiphyllum-frontend:service-folders
+  generator:
+    image: epiphyllum-backend:service-folders

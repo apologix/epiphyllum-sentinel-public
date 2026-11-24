@@ -1,0 +1,98 @@
+[
+  {
+    "text": "routine synthetic health check",
+    "expected": "clear"
+  },
+  {
+    "text": "expected configuration verified",
+    "expected": "clear"
+  },
+  {
+    "text": "request denied by local policy",
+    "expected": "clear"
+  },
+  {
+    "text": "backup completed privately",
+    "expected": "clear"
+  },
+  {
+    "text": "audit logging enabled",
+    "expected": "clear"
+  },
+  {
+    "text": "user login accepted in planned test",
+    "expected": "clear"
+  },
+  {
+    "text": "scheduler idle",
+    "expected": "clear"
+  },
+  {
+    "text": "normal connection closed",
+    "expected": "clear"
+  },
+  {
+    "text": "no audit logging disabled observed",
+    "expected": "clear"
+  },
+  {
+    "text": "service restarted by operator",
+    "expected": "clear"
+  },
+  {
+    "text": "audit logging disabled",
+    "expected": "finding"
+  },
+  {
+    "text": "public backup exposed",
+    "expected": "finding"
+  },
+  {
+    "text": "database exported",
+    "expected": "finding"
+  },
+  {
+    "text": "privilege escalation",
+    "expected": "finding"
+  },
+  {
+    "text": "auditoría desactivada inesperadamente",
+    "expected": "finding"
+  },
+  {
+    "text": "respaldo público sin autenticación",
+    "expected": "finding"
+  },
+  {
+    "text": "dataset transferred to unapproved destination",
+    "expected": "finding"
+  },
+  {
+    "text": "secret configuration unexpectedly readable",
+    "expected": "finding"
+  },
+  {
+    "text": "unexpected admin privileges granted",
+    "expected": "finding"
+  },
+  {
+    "text": "security controls removed without approval",
+    "expected": "finding"
+  },
+  {
+    "text": "ambiguous observation",
+    "expected": "inconclusive"
+  },
+  {
+    "text": "no concluyente",
+    "expected": "inconclusive"
+  },
+  {
+    "text": "posible cambio sin confirmar",
+    "expected": "inconclusive"
+  },
+  {
+    "text": "insufficient context",
+    "expected": "inconclusive"
+  }
+]

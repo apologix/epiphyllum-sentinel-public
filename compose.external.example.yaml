@@ -1,0 +1,12 @@
+# Copiar a compose.external.local.yaml y configurar una carpeta concreta.
+# Ejemplo: EXTERNAL_LOG_DIR=/ruta/absoluta/a/logs docker compose -f compose.yaml -f compose.external.local.yaml up -d
+# La carpeta debe existir en el host del daemon y su contenido será accesible al backend.
+services:
+  backend:
+    volumes:
+      - type: bind
+        source: ${EXTERNAL_LOG_DIR:?Configure una carpeta de logs autorizada}
+        target: /data/external
+        read_only: true
+        bind:
+          create_host_path: false

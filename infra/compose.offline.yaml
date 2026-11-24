@@ -1,0 +1,8 @@
+# Vista local del catálogo: el backend solo alcanza PostgreSQL y embeddings.
+# !override evita que Compose conserve provider-egress de compose.yaml.
+services:
+  backend:
+    networks: !override [internal]
+    environment:
+      PROVIDER_ALLOWED_ORIGINS: ""
+      GENERATION_PAUSED: "1"

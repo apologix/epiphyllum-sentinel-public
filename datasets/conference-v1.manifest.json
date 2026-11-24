@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "scenario": "conference-v1",
+  "sha256": "850f05e2e0b0edacf99606f331a75efea042be866b60ee272d27c9f9ff6899e1",
+  "events": 48,
+  "incidents": 4,
+  "evidence": {
+    "R1": 12,
+    "R2": 7,
+    "R3": 12,
+    "R4": 1
+  },
+  "source": "Generador sint\u00e9tico versionado, seed42; sin tr\u00e1fico de red",
+  "original_run_id": "00000000-0000-4000-8000-000000000501"
+}

@@ -1,0 +1,9 @@
+# Uso deliberado opcional: docker compose -f compose.yaml -f compose.live.yaml up -d
+# Esta red permite egress al backend. La allowlist/pinning la aplica reqwest, no Docker.
+services:
+  backend:
+    networks: [internal, provider-egress]
+    environment:
+      PROVIDER_ALLOWED_ORIGINS: ${PROVIDER_ALLOWED_ORIGINS:-}
+networks:
+  provider-egress:

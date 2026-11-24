@@ -1,0 +1,8 @@
+# Fragmento MySQL del laboratorio Canario (incluir desde my.cnf.d/).
+# El error log va al archivo fijo del contrato MCP. La AUDITORÍA queda
+# PENDIENTE del diagnóstico de la instalación real (mcp/docs/05): no se
+# activa ningún plugin aquí y audit.log puede no existir; eso es un
+# estado válido y documentado, no un error de esta instalación.
+[mysqld]
+bind-address = 127.0.0.1
+log_error = /var/lib/epiphyllum-lab/logs/mysql/error.log
