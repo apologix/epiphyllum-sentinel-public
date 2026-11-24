@@ -1,5 +1,7 @@
 # Epiphyllum Sentinel
 
+**Español** | [English](README.en.md)
+
 Demo administrativa local para investigar incidencias sintéticas y eventos de un laboratorio autorizado, con reglas deterministas, evidencia persistente, conversación y conocimiento vectorial. Rust/Axum/SQLx, PostgreSQL/pgvector, React/TypeScript y Sentence Transformers CPU. Embeddings y búsqueda coseno **reales** locales.
 
 **Propósito: un taller de 90 minutos** que enseña cómo un agente de IA puede asistir la respuesta a incidentes de ciberseguridad — sintetizar qué pasó, cómo solucionarlo y cuál es el impacto — sin reemplazar a la persona. En la demostración, una PC del laboratorio aislado recibe ataques reales y Sentinel los cuenta con su evidencia.
