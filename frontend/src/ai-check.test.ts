@@ -48,6 +48,17 @@ it("clave rechazada, sin clave y sin conexión dan textos distintos", () => {
   expect(down.badgeText).toBe("Sin conexión");
 });
 
+it("OpenCode Console se nombra y distingue acceso restringido de saldo insuficiente", () => {
+  const ok = aiCheckView({ ...base, provider: "opencode", model: "deepseek-v4.1-flash" });
+  expect(ok.title).toContain("OpenCode Console");
+  const forbidden = aiCheckView({ ...base, ok: false, provider: "opencode", code: "access_denied", status: 403 });
+  expect(forbidden.badgeText).toBe("Acceso restringido");
+  expect(forbidden.detail).toContain("permisos");
+  const balance = aiCheckView({ ...base, ok: false, provider: "opencode", code: "insufficient_balance", status: 402 });
+  expect(balance.badgeText).toBe("Saldo insuficiente");
+  expect(balance.detail).toContain("crédito");
+});
+
 it("la huella cambia cuando cambia cualquier valor probado", () => {
   const a = aiCheckFingerprint({ provider: "deepseek", base_url: "https://api.deepseek.com", model: "deepseek-chat", typedKey: false });
   const b = aiCheckFingerprint({ provider: "deepseek", base_url: "https://api.deepseek.com", model: "deepseek-reasoner", typedKey: false });

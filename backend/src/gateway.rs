@@ -52,7 +52,7 @@ pub async fn settle(
         .bind(attempt)
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE analysis_attempts SET state=$2,finished_at=now(),accounted_units=$3,input_tokens=$4,output_tokens=$5,usage_estimated=$6 WHERE id=$1").bind(attempt).bind(state).bind(charge).bind(usage.map(|u|u.0)).bind(usage.map(|u|u.1)).bind(usage.is_none() || tariff_unknown || a.get::<String,_>("provider") == "deepseek").execute(&mut *tx).await?;
+    sqlx::query("UPDATE analysis_attempts SET state=$2,finished_at=now(),accounted_units=$3,input_tokens=$4,output_tokens=$5,usage_estimated=$6 WHERE id=$1").bind(attempt).bind(state).bind(charge).bind(usage.map(|u|u.0)).bind(usage.map(|u|u.1)).bind(usage.is_none() || tariff_unknown || ["deepseek", "opencode"].contains(&a.get::<String,_>("provider").as_str())).execute(&mut *tx).await?;
     let job: Uuid = a.get("job_id");
     let incident: Option<Uuid> = a.get("incident_id");
     sqlx::query("UPDATE analysis_jobs SET state=$2,reason=CASE WHEN $2='unknown' THEN 'ambiguous_request_no_retry' WHEN $2='failed' AND EXISTS(SELECT 1 FROM analysis_attempts WHERE job_id=$1 AND error_code='partial_coverage') THEN 'partial_coverage_missing_ids' WHEN $2='failed' THEN 'invalid_provider_response' ELSE NULL END WHERE id=$1").bind(job).bind(state).execute(&mut *tx).await?;
@@ -595,6 +595,8 @@ pub(crate) async fn dispatch(
                 // Usage and finish metadata are durable before domain JSON/citation validation.
                 sqlx::query("UPDATE analysis_attempts SET provider_metadata=$2,input_tokens=$3,output_tokens=$4,error_code=$5 WHERE id=$1").bind(attempt).bind(&generation.metadata).bind(generation.usage.map(|u|u.0)).bind(generation.usage.map(|u|u.1)).bind(generation.error).execute(&app.pool).await?;
                 if generation.error == Some("credential_rejected")
+                    || generation.error == Some("access_denied")
+                    || generation.error == Some("insufficient_balance")
                     || generation.error == Some("usage_exceeds_bound")
                     || generation.error == Some("model_mismatch")
                     || generation.error == Some("usage_invalid")

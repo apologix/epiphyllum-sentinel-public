@@ -1547,7 +1547,15 @@ async fn save_settings(app: &App, v: &Value) -> Result<Response> {
     }
     let mode = strval(v, "mode", 8)?;
     if !["live", "draft", "disabled"].contains(&mode)
-        || !["openai", "deepseek", "gemini", "claude", "compatible"].contains(&provider)
+        || ![
+            "openai",
+            "deepseek",
+            "gemini",
+            "claude",
+            "opencode",
+            "compatible",
+        ]
+        .contains(&provider)
         || !v["json_mode"].is_boolean()
     {
         return Err(invalid());
@@ -1711,7 +1719,7 @@ async fn check_ai_connection(app: &App, v: &Value) -> Result<Response> {
     };
     let started = std::time::Instant::now();
     let workspace = (!workspace_id.is_empty()).then_some(workspace_id);
-    let probed = provider::probe(&base, &key, workspace).await;
+    let probed = provider::probe(&provider, &base, &key, workspace).await;
     let latency_ms = started.elapsed().as_millis() as u64;
     let result = match probed {
         Ok(probe) => {
@@ -1725,11 +1733,13 @@ async fn check_ai_connection(app: &App, v: &Value) -> Result<Response> {
                 .flatten();
             let (ok, code) = match probe.status {
                 200..=299 => (true, "ok"),
-                401 | 403 => (false, "key_rejected"),
+                401 => (false, "key_rejected"),
+                403 => (false, "access_denied"),
+                402 => (false, "insufficient_balance"),
                 429 => (false, "rate_limited"),
                 _ => (false, "provider_error"),
             };
-            json!({"ok":ok,"code":code,"status":probe.status,"provider":provider,"model":model,"latency_ms":latency_ms,"models":probe.models,"model_found":model_found})
+            json!({"ok":ok,"code":code,"status":probe.status,"provider":provider,"model":model,"latency_ms":latency_ms,"models":probe.models,"model_found":model_found,"model_details":probe.details})
         }
         Err(e) => {
             let code = if e.to_string().contains("destination_denied") {

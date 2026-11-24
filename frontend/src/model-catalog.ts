@@ -57,6 +57,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   deepseek: "DeepSeek",
   gemini: "Gemini",
   claude: "Claude / Anthropic",
+  opencode: "OpenCode Console",
   compatible: "Compatible",
 };
 
@@ -71,7 +72,9 @@ export function defaultBase(provider: string): string {
       ? "https://generativelanguage.googleapis.com/v1beta/openai/"
       : provider === "claude"
         ? "https://api.anthropic.com/v1"
-        : "https://api.openai.com/v1";
+        : provider === "opencode"
+          ? "https://opencode.ai/inference/openai/v1"
+          : "https://api.openai.com/v1";
 }
 
 export function entriesFor(catalog: ModelCatalog | null | undefined, provider: string): ModelCatalogEntry[] {

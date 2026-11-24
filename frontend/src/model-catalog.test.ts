@@ -2,8 +2,11 @@
 // diagnóstico exacto de lo que falta antes de habilitar live.
 import { expect, it } from "vitest";
 import {
+  defaultBase,
+  emptySpecFields,
   missingSpecFields,
   modelSuggestions,
+  providerLabel,
   specFieldsFrom,
   specFromFields,
   specIsValid,
@@ -78,4 +81,21 @@ it("cruza el catálogo con los modelos que anuncia /models", () => {
   const options = modelSuggestions(catalog, "openai", ["gpt-6.2-sol", "gpt-6-luna"]);
   expect(options[0]).toMatchObject({ id: "gpt-6.2-sol", known: true });
   expect(options[1]).toMatchObject({ id: "gpt-6-luna", known: false });
+});
+
+it("OpenCode usa su endpoint de Chat Completions, formato json_object y etiqueta propia", () => {
+  expect(providerLabel("opencode")).toBe("OpenCode Console");
+  expect(defaultBase("opencode")).toBe("https://opencode.ai/inference/openai/v1");
+  expect(emptySpecFields("opencode").format).toBe("json_object");
+  expect(specFieldsFrom({ ...spec, format: "json_object" }, "opencode").format).toBe("json_object");
+  const opencodeCatalog: ModelCatalog = {
+    ...catalog,
+    providers: {
+      ...catalog.providers,
+      opencode: [{ id: "deepseek-v4.1-flash", label: "DeepSeek V4.1 Flash", provider: "opencode", status: "verified", endpoint: "https://opencode.ai/inference/openai/v1", format: "json_object", output_parameter: "max_tokens", spec: { ...spec, format: "json_object" }, missing: [] }],
+    },
+  };
+  const options = modelSuggestions(opencodeCatalog, "opencode", ["deepseek-v4.1-flash", "future-chat"]);
+  expect(options[0]).toMatchObject({ id: "deepseek-v4.1-flash", known: true });
+  expect(options[1]).toMatchObject({ id: "future-chat", known: false });
 });

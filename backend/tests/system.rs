@@ -427,6 +427,63 @@ async fn system_integration() -> anyhow::Result<()> {
         .as_str()
         .unwrap()
         .to_string();
+    // OpenCode Console is persisted through the same closed profile API and
+    // catalog, with its own base URL, model spec, and live mode.
+    let ai_before: Value = client
+        .get(format!("{base}/settings/ai"))
+        .header("Host", "localhost:8080")
+        .header("Cookie", &cookie)
+        .send()
+        .await?
+        .json()
+        .await?;
+    let ai_version = ai_before["version"].as_i64().unwrap();
+    let opencode_entry = ai_before["catalog"]["providers"]["opencode"][0].clone();
+    let opencode_model = opencode_entry["id"].as_str().unwrap().to_string();
+    let mut opencode_models = serde_json::Map::new();
+    opencode_models.insert(opencode_model.clone(), opencode_entry["spec"].clone());
+    let saved = client
+        .put(format!("{base}/settings/ai"))
+        .header("Host", "localhost:8080")
+        .header("Origin", "http://localhost:8080")
+        .header("Cookie", &cookie)
+        .header("X-CSRF-Token", &csrf)
+        .json(&json!({
+            "expected_version": ai_version,
+            "name": "OpenCode Console prueba",
+            "provider": "opencode",
+            "base_url": "https://opencode.ai/inference/openai/v1",
+            "model": opencode_model,
+            "deep_model": "",
+            "models": Value::Object(opencode_models),
+            "drafts": {},
+            "deep_profile": null,
+            "mode": "live",
+            "json_mode": true,
+            "workspace_id": ""
+        }))
+        .send()
+        .await?;
+    assert_eq!(saved.status(), 200);
+    let ai_after: Value = client
+        .get(format!("{base}/settings/ai"))
+        .header("Host", "localhost:8080")
+        .header("Cookie", &cookie)
+        .send()
+        .await?
+        .json()
+        .await?;
+    assert_eq!(ai_after["profile"]["provider"], "opencode");
+    assert_eq!(
+        ai_after["profile"]["base_url"],
+        "https://opencode.ai/inference/openai/v1"
+    );
+    assert_eq!(ai_after["profile"]["mode"], "live");
+    sqlx::query("UPDATE app_settings SET value=$1,version=$2 WHERE key='ai'")
+        .bind(&ai_before["profile"])
+        .bind(ai_version as i32)
+        .execute(&app.pool)
+        .await?;
     let alerts: Value = client
         .get(format!("{base}/notifications"))
         .header("Host", "localhost:8080")
