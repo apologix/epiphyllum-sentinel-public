@@ -308,18 +308,6 @@ pub fn catalog() -> Value {
                     catalog_spec_at("json_object", 300_000_000, 1_500_000_000, "https://opencode.ai/docs/console/models/", "2026-11-24T00:00:00Z"),
                     "Chat Completions de OpenCode Console. 1M de contexto y 1M de salida máxima; Sentinel limita a 50K de entrada y 4096 de salida. Tarifa USD 3,00/15,00 por millón.",
                     opencode_sources.clone()),
-                catalog_entry(
-                    "minimax-m3", "MiniMax M3", "opencode",
-                    "https://opencode.ai/inference/openai/v1", "json_object", "max_tokens",
-                    catalog_spec_at("json_object", 30_000_000, 120_000_000, "https://opencode.ai/docs/console/models/", "2026-11-24T00:00:00Z"),
-                    "Chat Completions de OpenCode Console. 512K de contexto y 128K de salida; Sentinel limita a 50K de entrada y 4096 de salida. Tarifa USD 0,30/1,20 por millón.",
-                    opencode_sources.clone()),
-                catalog_entry(
-                    "minimax-m2.7", "MiniMax M2.7", "opencode",
-                    "https://opencode.ai/inference/openai/v1", "json_object", "max_tokens",
-                    catalog_spec_at("json_object", 30_000_000, 120_000_000, "https://opencode.ai/docs/console/models/", "2026-11-24T00:00:00Z"),
-                    "Chat Completions de OpenCode Console. 200K de contexto y 131K de salida; Sentinel limita a 50K de entrada y 4096 de salida. Tarifa USD 0,30/1,20 por millón.",
-                    opencode_sources.clone()),
             ],
             "compatible": [],
         },
@@ -461,11 +449,10 @@ pub async fn probe(
 ) -> anyhow::Result<Probe> {
     let url = models_endpoint_for(provider, base)?;
     let host = url.host_str().unwrap();
-    let addresses: Vec<SocketAddr> = tokio::net::lookup_host((host, 443)).await?.collect();
-    anyhow::ensure!(
-        !addresses.is_empty() && addresses.iter().all(|s| public_ip(s.ip())),
-        "dns_destination_denied"
-    );
+    // Keep only public IPv4 addresses. A host with both A and AAAA must not be
+    // denied just because IPv6 is conservatively unsupported.
+    let addresses = public_ipv4_addresses(tokio::net::lookup_host((host, 443)).await?);
+    anyhow::ensure!(!addresses.is_empty(), "dns_destination_denied");
     let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
@@ -548,6 +535,12 @@ pub fn public_ip(ip: IpAddr) -> bool {
         }
         IpAddr::V6(_) => false,
     }
+}
+fn public_ipv4_addresses(addresses: impl IntoIterator<Item = SocketAddr>) -> Vec<SocketAddr> {
+    addresses
+        .into_iter()
+        .filter(|s| s.is_ipv4() && public_ip(s.ip()))
+        .collect()
 }
 fn object(properties: Value) -> Value {
     let required: Vec<_> = properties.as_object().unwrap().keys().cloned().collect();
@@ -802,11 +795,10 @@ pub async fn generate(
     );
     let url = endpoint(base)?;
     let host = url.host_str().unwrap();
-    let addresses: Vec<SocketAddr> = tokio::net::lookup_host((host, 443)).await?.collect();
-    anyhow::ensure!(
-        !addresses.is_empty() && addresses.iter().all(|s| public_ip(s.ip())),
-        "dns_destination_denied"
-    );
+    // Pin public IPv4 addresses only; AAAA records do not invalidate a host
+    // that also offers a usable A record.
+    let addresses = public_ipv4_addresses(tokio::net::lookup_host((host, 443)).await?);
+    anyhow::ensure!(!addresses.is_empty(), "dns_destination_denied");
     let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
@@ -940,6 +932,12 @@ mod tests {
             assert!(!public_ip(ip.parse().unwrap()));
         }
         assert!(public_ip("8.8.8.8".parse().unwrap()));
+        let usable = public_ipv4_addresses(vec![
+            "[2606:4700:4700::1111]:443".parse().unwrap(),
+            "10.0.0.1:443".parse().unwrap(),
+            "8.8.8.8:443".parse().unwrap(),
+        ]);
+        assert_eq!(usable, vec!["8.8.8.8:443".parse().unwrap()]);
         assert!(spec("json_object").validate("claude").is_err());
         assert!(spec("json_schema").validate("claude").is_ok());
         let mut s = spec("json_schema");
@@ -1234,7 +1232,7 @@ mod tests {
         }
         assert!(providers["deepseek"].as_array().unwrap().len() == 2);
         assert!(providers["claude"].as_array().unwrap().len() == 2);
-        assert!(providers["opencode"].as_array().unwrap().len() == 7);
+        assert!(providers["opencode"].as_array().unwrap().len() == 5);
         assert!(providers["compatible"].as_array().unwrap().is_empty());
         let opencode = providers["opencode"].as_array().unwrap();
         let flash = opencode

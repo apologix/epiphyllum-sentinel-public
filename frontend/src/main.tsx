@@ -109,6 +109,13 @@ const reviewReasons: Record<string,string> = {
   operator_stopped: "Detenido por el operador; no se enviará.",
   circuit_open: "Pausa temporal: tres respuestas fallidas o ambiguas seguidas.",
   invalid_provider_response: "La API respondió, pero la respuesta no cumplió el contrato.",
+  insufficient_balance: "El proveedor rechazó la solicitud por saldo insuficiente; no se generó contenido.",
+  credential_rejected: "El proveedor rechazó la credencial configurada; revisá la API key.",
+  access_denied: "El proveedor rechazó el acceso; revisá permisos o restricciones del modelo.",
+  provider_bad_request: "El proveedor rechazó el formato de la solicitud; revisá la ficha del modelo.",
+  model_unavailable: "El modelo configurado ya no está disponible en el proveedor.",
+  rate_limited: "El proveedor limitó las solicitudes; no se reintenta automáticamente.",
+  provider_error: "El proveedor devolvió un error; el envío se conserva como fallido.",
 };
 const reviewReason = (reason?:string) => reason ? reviewReasons[reason] || reason : "";
 const severity: Record<string, string> = {
