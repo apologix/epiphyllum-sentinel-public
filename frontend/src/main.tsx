@@ -1525,7 +1525,7 @@ function Trace({ job }: { job: Data }) {
       </dl>
       <p>Ruta {job.route?.level === "deep" ? "profunda" : "estándar"} · router v{job.route?.router_version || "histórico"}: {job.route?.reason || "Ruta anterior al router"}</p>
       <p>Origen {job.analysis?.origin || "sin respuesta"} · {job.provider} / {job.model}</p>
-      {job.attempts?.map((a: Data) => <p key={a.id}>Tokens de entrada/salida: {a.input_tokens ?? "sin uso fiable"} / {a.output_tokens ?? "sin uso fiable"}. USD {(a.accounted_units / 100000000).toFixed(8)} {a.usage_estimated ? "estimado conservador" : "contabilizado"}. Estado {states[a.state] || a.state}. Modelo informado: {a.provider_metadata?.model || "no informado"}{a.provider_metadata?.opencode?.cost_usd != null ? ` · Costo reportado: USD ${Number(a.provider_metadata.opencode.cost_usd).toFixed(6)} (${a.provider_metadata.opencode.billing_source || "origen no informado"})` : ""}{a.provider_metadata?.opencode?.reasoning_tokens != null ? ` · Razonamiento: ${a.provider_metadata.opencode.reasoning_tokens} tokens` : ""}</p>)}
+      {job.attempts?.map((a: Data) => <p key={a.id}>Tokens de entrada/salida: {a.input_tokens ?? "sin uso fiable"} / {a.output_tokens ?? "sin uso fiable"}. USD {(a.accounted_units / 100000000).toFixed(8)} {a.usage_estimated ? "estimado conservador" : "contabilizado"}. Estado {states[a.state] || a.state}. Modelo informado: {a.provider_metadata?.model || "no informado"}</p>)}
       <details>
         <summary>Datos exactos incluidos</summary>
         <pre>{JSON.stringify(job.snapshot, null, 2)}</pre>
@@ -2084,7 +2084,7 @@ function Settings() {
         const profile = d.profile ?? {};
         const specs: Record<string, ModelSpec> = profile.models || {};
         const drafts: Record<string, SpecFields> = profile.drafts || {};
-        const provider = ["openai", "deepseek", "gemini", "claude", "opencode", "compatible"].includes(profile.provider) ? profile.provider : "openai";
+        const provider = ["openai", "deepseek", "gemini", "claude", "compatible"].includes(profile.provider) ? profile.provider : "openai";
         const model = profile.model || "";
         setModelSpecs(specs);
         setModelDrafts(drafts);
@@ -2227,17 +2227,8 @@ function Settings() {
       setChecking(false);
     }
   }
-  const checkStale = check !== null && check.fingerprint !== aiCheckFingerprint({ provider: form.provider, base_url: form.base_url, model: form.model, typedKey: key.length > 0 });
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    const unsupported = !checkStale
-      ? check?.result.model_details?.models.find((model) => model.id === form.model && !model.compatible)
-      : undefined;
-    if (unsupported) {
-      setError(`El modelo «${unsupported.id}» no es compatible: ${unsupported.reason || "no declara salida estructurada"}. Elegí otro modelo.`);
-      notifyToast("warning", "Modelo no compatible", "OpenCode Console no reporta salida estructurada para ese modelo; no se habilita live.");
-      return;
-    }
     const candidate = specFromFields(specFields);
     const missing = missingSpecFields(candidate, form.provider);
     if (missing.length) {
@@ -2275,6 +2266,7 @@ function Settings() {
     }
   }
   const checkView = check ? aiCheckView(check.result) : null;
+  const checkStale = check !== null && check.fingerprint !== aiCheckFingerprint({ provider: form.provider, base_url: form.base_url, model: form.model, typedKey: key.length > 0 });
   const catalogEntry = findCatalogEntry(catalog, form.provider, form.model);
   const candidateSpec = specFromFields(specFields);
   const missing = missingSpecFields(candidateSpec, form.provider);
@@ -2313,7 +2305,7 @@ function Settings() {
                 setCheck(null);
                 setCustomModel(false);
                 setAdvancedOpen(false);
-              }} options={[{value:"openai",label:"OpenAI"},{value:"deepseek",label:"DeepSeek"},{value:"gemini",label:"Gemini"},{value:"claude",label:"Claude / Anthropic"},{value:"opencode",label:"OpenCode Console"},{value:"compatible",label:"Compatible en origen allowlisted"}]} />
+              }} options={[{value:"openai",label:"OpenAI"},{value:"deepseek",label:"DeepSeek"},{value:"gemini",label:"Gemini"},{value:"claude",label:"Claude / Anthropic"},{value:"compatible",label:"Compatible en origen allowlisted"}]} />
           {form.provider === "compatible" && <ArcInput label="Base URL HTTPS" value={form.base_url} onChange={(e) => setForm({ ...form, base_url: e.target.value })} required />}
           <ArcInput label="API key de escritura única" type="password" autoComplete="new-password" value={key} onChange={(e) => setKey(e.target.value)} placeholder={data.has_key ? "Configurada; deje vacío para conservar" : "Sin configurar"} />
           <p className="muted">Credencial: {data.has_key ? "guardada" : "sin guardar"}{key ? " · hay una clave escrita sin guardar" : ""} · Almacenamiento {data.credential_storage}</p>
@@ -2336,34 +2328,6 @@ function Settings() {
                   {checkStale && <p className="ai-check-stale">La configuración cambió después de esta prueba. Vuelva a probar para validar los valores actuales.</p>}
                 </div>
               </div>
-            )}
-            {check && !checkStale && check.result.model_details && (
-              <details className="ai-advanced" open>
-                <summary>Modelos de OpenCode Console ({check.result.model_details.models.length})</summary>
-                <ul className="tight">
-                  {check.result.model_details.models.map((model) => (
-                    <li key={model.id}>
-                      <strong>{model.name}</strong>{" "}
-                      <code className="inline">{model.id}</code>{" "}
-                      <span className="status-pill" data-state={model.status === "verified" ? "active" : "inactive"}>
-                        {model.status === "verified" ? "Ficha verificada" : model.status === "pending" ? "Pendiente de ficha" : "No compatible"}
-                      </span>{" "}
-                      <span className="muted">
-                        {model.context ? `${model.context.toLocaleString("es")} de contexto` : "contexto no informado"}
-                        {model.output ? ` · ${model.output.toLocaleString("es")} de salida` : ""}
-                        {model.input_usd != null && model.output_usd != null
-                          ? ` · USD ${model.input_usd}/${model.output_usd} por millón`
-                          : ""}
-                        {model.reason ? ` · ${model.reason}` : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="muted">
-                  Se excluyeron {check.result.model_details.excluded} modelos de imagen, audio, embeddings o gratuitos restringidos al cliente oficial.
-                  La lista se consultó en {check.result.model_details.endpoint}; solo los modelos compatibles se ofrecen en el desplegable.
-                </p>
-              </details>
             )}
           </div>
           <div className="ai-readiness" role="status" aria-label="Estado del perfil">

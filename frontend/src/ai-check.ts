@@ -1,19 +1,6 @@
 // Ajustes → «Probar conexión»: presentación del diagnóstico que devuelve
 // POST /settings/ai/check. La prueba hace un único GET /models contra el
 // proveedor: no genera contenido ni consume tokens.
-export interface OpenCodeModelDetail {
-  id: string;
-  name: string;
-  status: "verified" | "pending" | "unsupported";
-  compatible: boolean;
-  reason: string | null;
-  context: number | null;
-  output: number | null;
-  input_usd: number | null;
-  output_usd: number | null;
-  structured_output: boolean;
-}
-
 export interface AiCheckResult {
   ok: boolean;
   code: string;
@@ -23,11 +10,6 @@ export interface AiCheckResult {
   latency_ms: number;
   models?: string[] | null;
   model_found?: boolean | null;
-  model_details?: {
-    endpoint: string;
-    excluded: number;
-    models: OpenCodeModelDetail[];
-  } | null;
 }
 
 export interface AiCheckView {
@@ -43,7 +25,6 @@ const PROVIDER_NAMES: Record<string, string> = {
   deepseek: "DeepSeek",
   gemini: "Gemini",
   claude: "Claude / Anthropic",
-  opencode: "OpenCode Console",
   compatible: "El proveedor",
 };
 
@@ -101,42 +82,6 @@ export function aiCheckView(r: AiCheckResult): AiCheckView {
         title: `${name} rechazó la credencial (HTTP ${r.status ?? 401})`,
         detail:
           "Revise la API key: puede estar revocada, mal copiada o pertenecer a otro proveedor. Si la escribió ahora, la prueba usa exactamente ese valor.",
-      };
-    case "access_denied":
-      return {
-        tone: "error",
-        badgeClass: "failed",
-        badgeText: "Acceso restringido",
-        title: `${name} rechazó el acceso (HTTP ${r.status ?? 403})`,
-        detail:
-          "La clave es válida, pero no tiene permiso para listar o solicitar modelos. Revisá los permisos de la API key en OpenCode Console (Models › Read o Request) o si el modelo está restringido para tu workspace.",
-      };
-    case "insufficient_balance":
-      return {
-        tone: "error",
-        badgeClass: "failed",
-        badgeText: "Saldo insuficiente",
-        title: `${name} informó un problema de saldo (HTTP ${r.status ?? 402})`,
-        detail:
-          "La cuenta no tiene crédito suficiente para esta solicitud. Cargá saldo en OpenCode Console o elegí un modelo cubierto por tu plan; Sentinel no cambia de proveedor automáticamente.",
-      };
-    case "model_unavailable":
-      return {
-        tone: "error",
-        badgeClass: "failed",
-        badgeText: "Modelo no disponible",
-        title: `${name} no tiene disponible «${r.model || "el modelo"}»`,
-        detail:
-          "El modelo puede estar retirado o no habilitado para tu workspace. Consultá la lista de modelos y elegí uno vigente antes de guardar el perfil.",
-      };
-    case "provider_error":
-      return {
-        tone: "error",
-        badgeClass: "failed",
-        badgeText: "Fallo del proveedor",
-        title: `${name} devolvió HTTP ${r.status ?? "5xx"}`,
-        detail:
-          "El proveedor no pudo completar la solicitud. Revisá su estado y volvé a probar más tarde; no se reintenta automáticamente para evitar cargos duplicados.",
       };
     case "rate_limited":
       return {
