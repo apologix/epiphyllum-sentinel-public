@@ -8,37 +8,6 @@ use uuid::Uuid;
 pub fn generation_paused() -> bool {
     std::env::var("GENERATION_PAUSED").as_deref() == Ok("1")
 }
-/// HTTP responses that definitively reject the request; they are failures, not
-/// ambiguous sends, and must not be retried.
-fn provider_failure(error: Option<&str>) -> bool {
-    matches!(
-        error,
-        Some(
-            "credential_rejected"
-                | "access_denied"
-                | "insufficient_balance"
-                | "provider_bad_request"
-                | "model_unavailable"
-                | "rate_limited"
-                | "provider_error"
-        )
-    )
-}
-/// Subset of explicit rejections that cannot have consumed tokens. A 429/5xx
-/// remains conservatively charged; auth, balance, bad request, and missing
-/// model did not process the generation.
-fn rejected_without_charge(error: Option<&str>) -> bool {
-    matches!(
-        error,
-        Some(
-            "credential_rejected"
-                | "access_denied"
-                | "insufficient_balance"
-                | "provider_bad_request"
-                | "model_unavailable"
-        )
-    )
-}
 pub async fn settle(
     app: &App,
     attempt: Uuid,
@@ -55,13 +24,9 @@ pub async fn settle(
     let live = a.get::<String, _>("provider") != "mock";
     let route: Value = a.get("route");
     let spec = serde_json::from_value::<provider::ModelSpec>(route["spec"].clone()).ok();
-    let error_code = a.get::<Option<String>, _>("error_code");
-    let tariff_unknown = error_code.as_deref() == Some("model_mismatch");
-    // An explicit provider rejection (auth, balance, bad request, missing
-    // model) did not process the request; do not charge the reserved worst case.
-    let charge = if rejected_without_charge(error_code.as_deref()) && usage.is_none() {
-        0
-    } else if state == "unknown" || (live && tariff_unknown) {
+    let tariff_unknown =
+        a.get::<Option<String>, _>("error_code").as_deref() == Some("model_mismatch");
+    let charge = if state == "unknown" || (live && tariff_unknown) {
         reserved
     } else if live {
         match (usage, spec.as_ref()) {
@@ -90,11 +55,7 @@ pub async fn settle(
     sqlx::query("UPDATE analysis_attempts SET state=$2,finished_at=now(),accounted_units=$3,input_tokens=$4,output_tokens=$5,usage_estimated=$6 WHERE id=$1").bind(attempt).bind(state).bind(charge).bind(usage.map(|u|u.0)).bind(usage.map(|u|u.1)).bind(usage.is_none() || tariff_unknown || ["deepseek", "opencode"].contains(&a.get::<String,_>("provider").as_str())).execute(&mut *tx).await?;
     let job: Uuid = a.get("job_id");
     let incident: Option<Uuid> = a.get("incident_id");
-    let failure_reason = error_code
-        .as_deref()
-        .filter(|code| provider_failure(Some(code)))
-        .unwrap_or("");
-    sqlx::query("UPDATE analysis_jobs SET state=$2,reason=CASE WHEN $2='unknown' THEN 'ambiguous_request_no_retry' WHEN $2='failed' AND EXISTS(SELECT 1 FROM analysis_attempts WHERE job_id=$1 AND error_code='partial_coverage') THEN 'partial_coverage_missing_ids' WHEN $2='failed' AND $3<>'' THEN $3 WHEN $2='failed' THEN 'invalid_provider_response' ELSE NULL END WHERE id=$1").bind(job).bind(state).bind(failure_reason).execute(&mut *tx).await?;
+    sqlx::query("UPDATE analysis_jobs SET state=$2,reason=CASE WHEN $2='unknown' THEN 'ambiguous_request_no_retry' WHEN $2='failed' AND EXISTS(SELECT 1 FROM analysis_attempts WHERE job_id=$1 AND error_code='partial_coverage') THEN 'partial_coverage_missing_ids' WHEN $2='failed' THEN 'invalid_provider_response' ELSE NULL END WHERE id=$1").bind(job).bind(state).execute(&mut *tx).await?;
     if let Some(value) = response {
         if a.get::<String, _>("kind") == "review" {
             crate::review::apply(&mut tx, job, &value, if live { "live" } else { "mock" }).await?;
@@ -665,7 +626,7 @@ pub(crate) async fn dispatch(
                 };
                 let state = if response.is_some() {
                     "succeeded"
-                } else if generation.usage.is_some() || provider_failure(generation.error) {
+                } else if generation.usage.is_some() {
                     "failed"
                 } else {
                     "unknown"
@@ -1038,27 +999,6 @@ mod budget_tests {
         grant.requests = 1;
         assert!(!grant.permits(run, 2, now, 0, now));
     }
-    #[test]
-    fn provider_rejections_are_definitive_and_only_some_are_free() {
-        for code in [
-            "credential_rejected",
-            "access_denied",
-            "insufficient_balance",
-            "provider_bad_request",
-            "model_unavailable",
-            "rate_limited",
-            "provider_error",
-        ] {
-            assert!(provider_failure(Some(code)), "{code}");
-        }
-        assert!(!provider_failure(Some("ambiguous_transport")));
-        assert!(rejected_without_charge(Some("insufficient_balance")));
-        assert!(rejected_without_charge(Some("access_denied")));
-        assert!(!rejected_without_charge(Some("rate_limited")));
-        assert!(!rejected_without_charge(Some("provider_error")));
-        assert!(!rejected_without_charge(None));
-    }
-
     #[test]
     fn money_rounds_up_without_float() {
         assert_eq!(worst_case_units(1, 0, 1, 0).unwrap(), 1);

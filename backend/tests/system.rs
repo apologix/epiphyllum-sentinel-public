@@ -484,31 +484,6 @@ async fn system_integration() -> anyhow::Result<()> {
         .bind(ai_version as i32)
         .execute(&app.pool)
         .await?;
-    // A definitive provider rejection is a failure, not an ambiguous send: it
-    // releases the reservation without charging the worst case.
-    let rejected_job = Uuid::new_v4();
-    sqlx::query("INSERT INTO analysis_jobs(id,kind,incident_id,evidence_version,provider_profile_version,provider,model,snapshot_hash,snapshot,state) VALUES($1,'chat',$2,1,1,'opencode','deepseek-v4.1-flash','','{}','pending')")
-        .bind(rejected_job)
-        .bind(inc)
-        .execute(&app.pool)
-        .await?;
-    let rejected_attempt = gateway::reserve(&app, rejected_job, 1_000_000)
-        .await?
-        .expect("reserva de prueba");
-    sqlx::query("UPDATE analysis_attempts SET state='in_flight',error_code='insufficient_balance' WHERE id=$1")
-        .bind(rejected_attempt)
-        .execute(&app.pool)
-        .await?;
-    gateway::settle(&app, rejected_attempt, "failed", None, None).await?;
-    let rejected: (String, String, i64) = sqlx::query_as(
-        "SELECT j.state,j.reason,a.accounted_units FROM analysis_jobs j JOIN analysis_attempts a ON a.job_id=j.id WHERE j.id=$1",
-    )
-    .bind(rejected_job)
-    .fetch_one(&app.pool)
-    .await?;
-    assert_eq!(rejected.0, "failed");
-    assert_eq!(rejected.1, "insufficient_balance");
-    assert_eq!(rejected.2, 0);
     let alerts: Value = client
         .get(format!("{base}/notifications"))
         .header("Host", "localhost:8080")
