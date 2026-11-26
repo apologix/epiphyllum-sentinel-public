@@ -2807,3 +2807,11 @@ div.service-dialog { width: min(62rem, calc(100vw - 2rem)); padding: 0; }
 
 /* (2d) EmptyState de hallazgos sin la tabla vacía gigante delante. */
 .cve-empty-state { padding-top: 20px; padding-bottom: 20px; }
+
+/* Selector de idioma: ES/EN, discreto y accesible. */
+.lang-switch { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--line, #3a3a3a); border-radius: 6px; }
+.lang-switch button { border: 0; background: transparent; color: inherit; font: inherit; font-size: 12px; line-height: 1; padding: 4px 6px; border-radius: 4px; cursor: pointer; opacity: .65; }
+.lang-switch button[aria-pressed="true"] { background: color-mix(in srgb, currentColor 18%, transparent); opacity: 1; font-weight: 600; }
+.lang-switch button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.lang-corner { position: fixed; top: 16px; right: 16px; z-index: 20; }
+.nav-lang { padding: 10px 12px 0; }

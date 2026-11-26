@@ -47,6 +47,7 @@ import { SentinelLogo } from "./logo";
 import { ToastHost, notifyToast } from "./toast";
 import { StreamPanel, WafflePanel, WAFFLE_COLORS } from "./charts05";
 import { buildStreamWindow } from "./stream-window";
+import { LangProvider, LangSwitch, locale } from "./i18n";
 type Data = Record<string, any>;
 let csrf = "";
 async function api(path: string, method = "GET", body?: unknown) {
@@ -120,7 +121,7 @@ const severity: Record<string, string> = {
 };
 const time = (s: string) =>
   s
-    ? new Date(s).toLocaleString("es-CR", { timeZone: "America/Costa_Rica" })
+    ? new Date(s).toLocaleString(locale(), { timeZone: "America/Costa_Rica" })
     : "—";
 function Badge({ value }: { value: string }) {
   // Insignia de Arc con el tono según la clase de valor; el texto visible no
@@ -317,6 +318,7 @@ function App() {
         <br />
         Las decisiones las toma una persona.
       </div>
+      <div className="nav-lang"><LangSwitch /></div>
       <ArcButton
         className="logout"
         aria-label="Cerrar sesión"
@@ -345,6 +347,7 @@ function App() {
   if (!session)
     return (
       <main className="login">
+        <div className="lang-corner"><LangSwitch /></div>
         <section>
           <div className="login-brand">
             <Flower />
@@ -406,6 +409,7 @@ function App() {
             <span className={connected ? "connection" : "offline"}>
               {connected ? "● Conectado" : "○ Reconectando"}
             </span>
+            <LangSwitch />
             <Notifications refresh={refresh} onOpen={(id) => { setView("Incidencias"); setSelected(id); }} />
           </div>
         </header>
@@ -538,9 +542,9 @@ const eventLabels: Record<string, string> = {
   "system.notice": "Avisos del sistema",
 };
 const number = (value: number) =>
-  new Intl.NumberFormat("es-CR").format(value || 0);
+  new Intl.NumberFormat(locale()).format(value || 0);
 const dollars = (units: number) =>
-  new Intl.NumberFormat("es-CR", {
+  new Intl.NumberFormat(locale(), {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
@@ -2509,7 +2513,9 @@ const root = document.getElementById("root");
 if (root)
   createRoot(root).render(
     <React.StrictMode>
-      <App />
+      <LangProvider>
+        <App />
+      </LangProvider>
     </React.StrictMode>,
   );
 
